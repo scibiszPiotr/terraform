@@ -11,10 +11,11 @@ variable "OWNER" {
 }
 
 variable "APP_DB_TAG" {
-  default = 'latest'
+  default = "latest"
 }
+
 variable "APP_S3_TAG" {
-  default = 'latest'
+  default = "latest"
 }
 
 variable "AWS_ACCESS_KEY_ID" {}
