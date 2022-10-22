@@ -78,7 +78,7 @@ pipeline {
             script {
                 dir('terraform') {
                     git url: "https://github.com/scibiszPiotr/terraform.git", branch: 'master'
-                    sh "terraform apply -auto-approve -var 'APP_DB_TAG=${tagDb}' -var 'APP_S3_TAG=${tagS3}' -var 'AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}' -var 'AWS_SECRET_ACCESS_KEY=AWS_SECRET_ACCESS_KEY'"
+                    sh "terraform apply -auto-approve -var 'APP_DB_TAG=${tagDb}' -var 'APP_S3_TAG=${tagS3}' -var 'AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}' -var 'AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}'"
                 }
             }
         }
