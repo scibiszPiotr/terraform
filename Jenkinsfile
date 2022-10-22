@@ -1,29 +1,77 @@
 pipeline {
   environment {
     registry = '890769921003.dkr.ecr.eu-central-1.amazonaws.com/pscibisz-db'
+    registryS3 = '890769921003.dkr.ecr.eu-central-1.amazonaws.com/pscibisz-web-s3'
     registryCredential = 'aws-kredki'
-    dockerImage = ''
-    tag = sh(returnStdout: true, script: "git ls-remote https://github.com/scibiszPiotr/upskill_db.git rev-parse --short=10 HEAD | cut -c 1-10").trim()
+    tagDb = sh(returnStdout: true, script: "git ls-remote https://github.com/scibiszPiotr/upskill_db.git rev-parse --short=10 HEAD | cut -c 1-10").trim()
+    tagS3 = sh(returnStdout: true, script: "git ls-remote https://github.com/scibiszPiotr/upskill_s3.git rev-parse --short=10 HEAD | cut -c 1-10").trim()
   }
   agent any
+  tools {
+       terraform 'terraform'
+    }
   stages {
-    stage ('Git clone') {
+    stage ('Git clone db') {
         steps {
-            git url: "https://github.com/scibiszPiotr/upskill_db.git", branch: 'main'
+            sh "mkdir -p build"
+            dir('build') {
+                git url: "https://github.com/scibiszPiotr/upskill_db.git", branch: 'master'
+            }
         }
     }
-    stage('Building image') {
+    stage ('Git clone s3') {
+        steps {
+            sh "mkdir -p build-s3"
+            dir('build-s3') {
+                git url: "https://github.com/scibiszPiotr/upskill_s3.git", branch: 'master'
+            }
+        }
+    }
+    stage('Building image db') {
       steps{
         script {
-          dockerImage = docker.build registry + ":" + tag
+            dir('build') {
+                dockerImageDb = docker.build registry + ":" + tagDb
+            }
         }
       }
     }
-    stage('Deploy image') {
+    stage('Building image S3') {
+      steps{
+        script {
+            dir('build-s3') {
+                dockerImageS3 = docker.build registryS3 + ":" + tagS3
+            }
+        }
+      }
+    }
+    stage('Deploy image db') {
         steps{
             script{
                 docker.withRegistry("https://" + registry, "ecr:eu-central-1:" + registryCredential) {
-                    dockerImage.push()
+                    dockerImageDb.push()
+                }
+            }
+        }
+    }
+    stage('Deploy image s3') {
+        steps{
+            script{
+                docker.withRegistry("https://" + registryS3, "ecr:eu-central-1:" + registryCredential) {
+                    dockerImageS3.push()
+                }
+            }
+        }
+    }
+    stage('Terraform') {
+        steps{
+            script {
+                dir('terraform') {
+                    git url: "https://github.com/scibiszPiotr/terraform.git", branch: 'master'
+                    sh "terraform init"
+                    sh "terraform plan"
+                    sh "terraform apply -auto-approve -var APP_DB_TAG = ${tagDb} -var APP_S3_TAG = ${tagS3}"
+
                 }
             }
         }
