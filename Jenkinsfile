@@ -11,6 +11,16 @@ pipeline {
        terraform 'terraform'
     }
   stages {
+  stage('Terraform init') {
+          steps{
+              script {
+                  dir('terraform') {
+                      git url: "https://github.com/scibiszPiotr/terraform.git", branch: 'master'
+                      sh 'terraform init'
+                  }
+              }
+          }
+      }
     stage ('Git clone db') {
         steps {
             sh "mkdir -p build"
@@ -63,15 +73,12 @@ pipeline {
             }
         }
     }
-    stage('Terraform') {
+    stage('Terraform apply') {
         steps{
             script {
                 dir('terraform') {
                     git url: "https://github.com/scibiszPiotr/terraform.git", branch: 'master'
-                    sh "terraform init"
-                    sh "terraform plan"
-                    sh "terraform apply -auto-approve -var APP_DB_TAG = ${tagDb} -var APP_S3_TAG = ${tagS3}"
-
+                    sh "terraform apply -auto-approve -var 'APP_DB_TAG=${tagDb}' -var 'APP_S3_TAG=${tagS3}' -var 'AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}' -var 'AWS_SECRET_ACCESS_KEY=AWS_SECRET_ACCESS_KEY'"
                 }
             }
         }
